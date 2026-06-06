@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 
 const findings = [
@@ -25,22 +26,24 @@ const actions = [
   { icon: 'sparkles', label: 'Akıllı Denetim', desc: 'Yapay zeka ile sürekli izleme', color: Colors.primary },
 ];
 
-const mapLines = [
-  { type: 'green', top: '25%', left: '10%', width: 80, height: 4 },
-  { type: 'green', top: '50%', left: '55%', width: 70, height: 4 },
-  { type: 'warning', top: '35%', left: '30%', width: 60, height: 4 },
-  { type: 'warning', top: '60%', left: '15%', width: 50, height: 4 },
+const resultMarkers = [
+  { lat: 40.9930, lng: 29.0270, label: 'Düzenli Park', color: Colors.secondary },
+  { lat: 40.9890, lng: 29.0335, label: 'Düzenli Park', color: Colors.secondary },
+  { lat: 40.9912, lng: 29.0300, label: 'Riskli Alan', color: Colors.warning },
+  { lat: 40.9875, lng: 29.0260, label: 'Kaldırım İhlali Riski', color: Colors.danger },
+  { lat: 40.9928, lng: 29.0330, label: 'Park Kümesi', color: Colors.primary },
 ];
 
 export default function AnalysisResultScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
 
   return (
     <View style={styles.root}>
       {/* Top Info Bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={goBack}>
           <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <View style={styles.topBarInfo}>
@@ -110,36 +113,25 @@ export default function AnalysisResultScreen() {
         {/* Map */}
         <View style={styles.mapCard}>
           <View style={styles.mapBg}>
-            {/* Streets */}
-            <View style={[styles.street, { top: '20%', left: 0, right: 0, height: 3 }]} />
-            <View style={[styles.street, { top: '55%', left: 0, right: 0, height: 3 }]} />
-            <View style={[styles.street, { top: '80%', left: 0, right: 0, height: 3 }]} />
-            <View style={[styles.street, { left: '35%', top: 0, bottom: 0, width: 3 }]} />
-            <View style={[styles.street, { left: '75%', top: 0, bottom: 0, width: 3 }]} />
-
-            {/* Green park lines */}
-            <View style={[styles.parkLine, { top: '15%', left: '5%', width: 80, backgroundColor: Colors.secondary + 'AA' }]} />
-            <View style={[styles.parkLine, { top: '48%', left: '40%', width: 70, backgroundColor: Colors.secondary + 'AA' }]} />
-
-            {/* Warning lines */}
-            <View style={[styles.parkLine, { top: '30%', left: '20%', width: 55, backgroundColor: Colors.warning + 'AA' }]} />
-
-            {/* Risk zones */}
-            <View style={[styles.riskZone, { top: '25%', left: '25%' }]} />
-            <View style={[styles.riskZone, { top: '55%', left: '42%' }]} />
-
-            {/* P markers */}
-            {[{ top: '10%', left: '5%', n: 18 }, { top: '35%', left: '5%', n: 12 }, { top: '45%', left: '35%', n: 24 }, { top: '70%', left: '42%', n: 9 }, { top: '50%', left: '70%', n: 15 }].map((m, i) => (
-              <View key={i} style={[styles.pMarker, { top: m.top, left: m.left }]}>
-                <Text style={styles.pMarkerIcon}>P</Text>
-                <Text style={styles.pMarkerNum}>{m.n}</Text>
-              </View>
-            ))}
-
-            {/* Street labels */}
-            <Text style={[styles.streetLabel, { top: '4%', left: '30%' }]}>Bağdat Cd.</Text>
-            <Text style={[styles.streetLabel, { top: '4%', right: '5%' }]}>Söğütlüçeşme Cd.</Text>
-            <Text style={[styles.streetLabel, { bottom: '12%', left: '15%' }]}>Moda Cd.</Text>
+            <MapView
+              provider={PROVIDER_DEFAULT}
+              style={StyleSheet.absoluteFill}
+              initialRegion={{
+                latitude: 40.9905,
+                longitude: 29.0300,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+            >
+              {resultMarkers.map((m, i) => (
+                <Marker
+                  key={i}
+                  coordinate={{ latitude: m.lat, longitude: m.lng }}
+                  title={m.label}
+                  pinColor={m.color}
+                />
+              ))}
+            </MapView>
           </View>
 
           {/* Legend */}

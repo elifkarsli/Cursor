@@ -9,8 +9,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
+
+const detailMarkers = [
+  { lat: 40.9930, lng: 29.0265, label: 'Araç #1-8', color: Colors.primary },
+  { lat: 40.9885, lng: 29.0270, label: 'Araç #9-14', color: Colors.primary },
+  { lat: 40.9935, lng: 29.0340, label: 'Araç #15-21', color: Colors.primary },
+  { lat: 40.9875, lng: 29.0335, label: 'Araç #22-27', color: Colors.primary },
+  { lat: 40.9905, lng: 29.0300, label: 'Riskli Bölge', color: Colors.danger },
+  { lat: 40.9895, lng: 29.0285, label: 'Anonimleştirilen Bölge', color: Colors.purple },
+];
 
 type FilterTab = 'Tümü' | 'Araçlar' | 'Riskli Alanlar' | 'Anonimleştirilen Bölgeler';
 const tabs: FilterTab[] = ['Tümü', 'Araçlar', 'Riskli Alanlar', 'Anonimleştirilen Bölgeler'];
@@ -27,11 +37,12 @@ const detailRows = [
 export default function DetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
   const [activeTab, setActiveTab] = useState<FilterTab>('Tümü');
 
   return (
     <View style={styles.root}>
-      <AppHeader showBack onBack={() => router.back()} title="Detaylı Tespit İncelemesi" />
+      <AppHeader showBack onBack={goBack} title="Detaylı Tespit İncelemesi" />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
 
         {/* Filter Tabs */}
@@ -53,62 +64,28 @@ export default function DetailScreen() {
         {/* Map */}
         <View style={styles.mapCard}>
           <View style={styles.mapBg}>
-            {/* Streets */}
-            <View style={[styles.street, { top: '30%', left: 0, right: 0 }]} />
-            <View style={[styles.street, { top: '65%', left: 0, right: 0 }]} />
-            <View style={[styles.street, { left: '25%', top: 0, bottom: 0, width: 2 }]} />
-            <View style={[styles.street, { left: '65%', top: 0, bottom: 0, width: 2 }]} />
-
-            {/* Location selector */}
-            <View style={styles.locationSelector}>
+            <MapView
+              provider={PROVIDER_DEFAULT}
+              style={StyleSheet.absoluteFill}
+              initialRegion={{
+                latitude: 40.9905,
+                longitude: 29.0300,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+            >
+              {detailMarkers.map((m, i) => (
+                <Marker
+                  key={i}
+                  coordinate={{ latitude: m.lat, longitude: m.lng }}
+                  title={m.label}
+                  pinColor={m.color}
+                />
+              ))}
+            </MapView>
+            <View style={styles.locationSelector} pointerEvents="none">
               <Ionicons name="location" size={12} color={Colors.primary} />
               <Text style={styles.locationText}>Kadıköy, İstanbul</Text>
-              <Ionicons name="chevron-down" size={12} color={Colors.textSecondary} />
-            </View>
-
-            {/* Vehicle clusters */}
-            <View style={[styles.cluster, styles.clusterBlue, { top: '10%', left: '5%' }]}>
-              <Text style={styles.clusterLabel}>Araç #1-8</Text>
-              <View style={styles.clusterBadge}><Text style={styles.clusterBadgeText}>8</Text></View>
-            </View>
-            <View style={[styles.cluster, styles.clusterBlue, { top: '55%', left: '5%' }]}>
-              <Text style={styles.clusterLabel}>Araç #9-14</Text>
-              <View style={styles.clusterBadge}><Text style={styles.clusterBadgeText}>6</Text></View>
-            </View>
-            <View style={[styles.cluster, styles.clusterBlue, { top: '5%', right: '5%' }]}>
-              <Text style={styles.clusterLabel}>Araç #15-21</Text>
-              <View style={styles.clusterBadge}><Text style={styles.clusterBadgeText}>7</Text></View>
-            </View>
-            <View style={[styles.cluster, styles.clusterBlue, { bottom: '10%', right: '8%' }]}>
-              <Text style={styles.clusterLabel}>Araç #22-27</Text>
-              <View style={styles.clusterBadge}><Text style={styles.clusterBadgeText}>6</Text></View>
-            </View>
-
-            {/* Risk zone */}
-            <View style={styles.riskZone}>
-              <Ionicons name="warning" size={12} color={Colors.danger} />
-              <Text style={styles.riskZoneText}>Riskli Bölge</Text>
-            </View>
-
-            {/* Sidewalk zones */}
-            <View style={[styles.sidewalkZone, { top: '45%', left: '15%' }]}>
-              <Text style={styles.sidewalkText}>Kaldırım Yakını</Text>
-            </View>
-            <View style={[styles.sidewalkZone, { bottom: '18%', left: '15%' }]}>
-              <Text style={styles.sidewalkText}>Kaldırım Yakını</Text>
-            </View>
-
-            {/* Anon zone */}
-            <View style={styles.anonZone}>
-              <Ionicons name="shield-checkmark" size={12} color={Colors.purple} />
-              <Text style={styles.anonZoneText}>Anonimleştirilen Bölge</Text>
-            </View>
-
-            {/* Map Controls */}
-            <View style={styles.mapControls}>
-              <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>+</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>−</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mapBtn}><Ionicons name="locate" size={14} color={Colors.primary} /></TouchableOpacity>
             </View>
           </View>
 
