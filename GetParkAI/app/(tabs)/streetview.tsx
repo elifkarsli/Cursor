@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
+import { useLocation } from '../../hooks/useLocation';
 
 const criteria = [
   { icon: 'square', label: 'Park çizgileri', desc: 'Mevcut ve görünürlük', color: Colors.secondary },
@@ -22,8 +23,13 @@ const criteria = [
 
 export default function StreetViewScreen() {
   const router = useRouter();
-  const [street, setStreet] = useState('Bağdat Caddesi');
+  const { coords: myCoords, isReal } = useLocation();
+  const [street, setStreet] = useState('');
   const [coords, setCoords] = useState('');
+
+  const fillMyLocation = () => {
+    setCoords(`${myCoords.latitude.toFixed(5)}, ${myCoords.longitude.toFixed(5)}`);
+  };
 
   return (
     <View style={styles.root}>
@@ -86,9 +92,9 @@ export default function StreetViewScreen() {
         </View>
 
         {/* Locate Button */}
-        <TouchableOpacity style={styles.locateBtn}>
+        <TouchableOpacity style={styles.locateBtn} onPress={fillMyLocation}>
           <Ionicons name="locate" size={18} color={Colors.white} />
-          <Text style={styles.locateBtnText}>Konumu Getir</Text>
+          <Text style={styles.locateBtnText}>Konumumu Getir</Text>
         </TouchableOpacity>
 
         {/* Street View Map */}
@@ -96,11 +102,11 @@ export default function StreetViewScreen() {
           <View style={styles.mapHeader}>
             <View style={styles.mapTitleRow}>
               <Ionicons name="location" size={14} color={Colors.primary} />
-              <Text style={styles.mapTitle}>Bağdat Caddesi, Kadıköy</Text>
+              <Text style={styles.mapTitle}>{street ? street : 'Mevcut Konum'}</Text>
             </View>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Veri güncellendi: 10:24</Text>
+              <Text style={styles.liveText}>{isReal ? 'Konum alındı' : 'Varsayılan konum'}</Text>
             </View>
             <Text style={styles.mapSubtitle}>Seçili cadde segmentinin kapsamı aşağıda gösterilmektedir.</Text>
           </View>
@@ -112,25 +118,20 @@ export default function StreetViewScreen() {
                 <MapView
                   provider={PROVIDER_DEFAULT}
                   style={StyleSheet.absoluteFill}
-                  initialRegion={{
-                    latitude: 40.9928,
-                    longitude: 29.0315,
+                  region={{
+                    latitude: myCoords.latitude,
+                    longitude: myCoords.longitude,
                     latitudeDelta: 0.012,
                     longitudeDelta: 0.012,
                   }}
+                  showsUserLocation
                 >
                   <Marker
-                    coordinate={{ latitude: 40.9928, longitude: 29.0315 }}
-                    title="Bağdat Caddesi"
-                    description="Kadıköy, İstanbul"
+                    coordinate={{ latitude: myCoords.latitude, longitude: myCoords.longitude }}
+                    title={street ? street : 'Mevcut Konum'}
                     pinColor={Colors.primary}
                   />
                 </MapView>
-
-                {/* Bağdat Cd label */}
-                <View style={styles.streetNameTag} pointerEvents="none">
-                  <Text style={styles.streetNameText}>Bağdat Caddesi</Text>
-                </View>
               </View>
             </View>
 

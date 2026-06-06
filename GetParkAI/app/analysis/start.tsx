@@ -14,13 +14,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
-
-const districts = ['İstanbul', 'Kadıköy', 'Caferağa Mh.', 'Moda Cd.'];
+import { useParkingMap, riskPinColor } from '../../hooks/useParkingMap';
 
 export default function AnalysisStartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
+  const { coords, spots, loading: mapLoading, locationLabel, hasSpots, isReal } = useParkingMap(3000);
   const [anonymize, setAnonymize] = useState(true);
   const [plateFilter, setPlateFilter] = useState(true);
   const [pedestrian, setPedestrian] = useState(true);
@@ -43,15 +43,19 @@ export default function AnalysisStartScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* District Selectors */}
-        <View style={styles.districtRow}>
-          {districts.map((d, i) => (
-            <TouchableOpacity key={i} style={[styles.districtChip, i === 1 && styles.districtChipActive]}>
-              <Text style={[styles.districtText, i === 1 && styles.districtTextActive]}>{d}</Text>
-              <Ionicons name="chevron-down" size={12} color={i === 1 ? Colors.primary : Colors.textSecondary} />
-            </TouchableOpacity>
-          ))}
+        {/* Location info */}
+        <View style={styles.locationInfo}>
+          <Ionicons name="navigate" size={16} color={isReal ? Colors.secondary : Colors.warning} />
+          <Text style={styles.locationInfoText}>
+            {mapLoading ? 'Konum alınıyor...' : isReal ? `Mevcut konum: ${locationLabel}` : 'Konum izni gerekli — Ayarlar\'dan konum iznini açın'}
+          </Text>
         </View>
+        {!mapLoading && !hasSpots && (
+          <View style={styles.noDataBanner}>
+            <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.noDataBannerText}>Bu bölgede kayıtlı park yeri verisi yok</Text>
+          </View>
+        )}
 
         {/* Map */}
         <View style={styles.mapCard}>
@@ -60,21 +64,23 @@ export default function AnalysisStartScreen() {
               <MapView
                 provider={PROVIDER_DEFAULT}
                 style={StyleSheet.absoluteFill}
-                initialRegion={{
-                  latitude: 40.9885,
-                  longitude: 29.0270,
+                region={{
+                  latitude: coords.latitude,
+                  longitude: coords.longitude,
                   latitudeDelta: 0.014,
                   longitudeDelta: 0.014,
                 }}
+                showsUserLocation={isReal}
               >
-                <Marker
-                  coordinate={{ latitude: 40.9885, longitude: 29.0270 }}
-                  title="Seçili Alan"
-                  description="Moda Cd. — ≈ 350 m yarıçap"
-                  pinColor={Colors.primary}
-                />
+                {spots.map((s) => (
+                  <Marker
+                    key={s.id}
+                    coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                    pinColor={riskPinColor(s.risk_level)}
+                  />
+                ))}
                 <Circle
-                  center={{ latitude: 40.9885, longitude: 29.0270 }}
+                  center={{ latitude: coords.latitude, longitude: coords.longitude }}
                   radius={350}
                   strokeColor={Colors.primary}
                   strokeWidth={2}
@@ -82,7 +88,9 @@ export default function AnalysisStartScreen() {
                 />
               </MapView>
               <View style={styles.selectedBadge} pointerEvents="none">
-                <Text style={styles.selectedBadgeText}>Seçili Alan · ≈ 350 m yarıçap</Text>
+                <Text style={styles.selectedBadgeText}>
+                  {hasSpots ? `${spots.length} park noktası` : 'Park yeri verisi yok'} · ≈ 350 m
+                </Text>
               </View>
             </View>
           </View>
@@ -200,6 +208,10 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: FontSize.md, color: Colors.text },
   searchLocBtn: { padding: 4 },
 
+  locationInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.white, borderRadius: BorderRadius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  locationInfoText: { flex: 1, fontSize: FontSize.sm, color: Colors.text },
+  noDataBanner: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.gray100, borderRadius: BorderRadius.lg, padding: Spacing.md },
+  noDataBannerText: { flex: 1, fontSize: FontSize.sm, color: Colors.textSecondary },
   districtRow: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap' },
   districtChip: {
     flexDirection: 'row',

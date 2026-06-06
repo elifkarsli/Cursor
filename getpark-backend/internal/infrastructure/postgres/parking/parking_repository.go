@@ -21,6 +21,13 @@ func NewParkingRepo(db *pgxpool.Pool) *ParkingRepo {
 	return &ParkingRepo{db: db}
 }
 
+func nullableOrgID(orgID string) any {
+	if orgID == "" {
+		return nil
+	}
+	return orgID
+}
+
 // SaveSpot park noktasını ekler; zaten varsa urban_index günceller.
 func (r *ParkingRepo) SaveSpot(ctx context.Context, spot *model.ParkingSpot) error {
 	_, err := r.db.Exec(ctx, `
@@ -30,7 +37,7 @@ func (r *ParkingRepo) SaveSpot(ctx context.Context, spot *model.ParkingSpot) err
 		  SET urban_index = EXCLUDED.urban_index,
 		      updated_at  = EXCLUDED.updated_at
 	`, spot.ID, spot.Latitude, spot.Longitude, spot.UrbanIndex,
-		spot.OrganizationID, spot.CreatedAt, time.Now())
+		nullableOrgID(spot.OrganizationID), spot.CreatedAt, time.Now())
 	if err != nil {
 		return domainErr.New(domainErr.ErrInternal, "save parking spot failed", err)
 	}

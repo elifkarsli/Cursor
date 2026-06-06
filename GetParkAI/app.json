@@ -17,6 +17,11 @@
       "bundleIdentifier": "com.getparkai.app",
       "config": {
         "googleMapsApiKey": "AIzaSyDCu9f2Snl8MB3LOb6Wr8qMQA9-i5sjkqQ"
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Park analizini yapabilmek için galerinizden sokak fotoğrafı seçmenize izin verir.",
+        "NSCameraUsageDescription": "Park analizi için sokak fotoğrafı çekebilmenize izin verir.",
+        "NSLocationWhenInUseUsageDescription": "Konumunuza göre park analizi yapabilmek için kullanılır."
       }
     },
     "android": {
@@ -36,7 +41,20 @@
     },
     "scheme": "getparkai",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Park analizini yapabilmek için galerinizden sokak fotoğrafı seçmenize izin verir.",
+          "cameraPermission": "Park analizi için sokak fotoğrafı çekebilmenize izin verir."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Konumunuza göre park analizi yapabilmek için kullanılır."
+        }
+      ]
     ]
   }
 }

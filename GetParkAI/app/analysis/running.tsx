@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
+import { useParkingMap, riskPinColor } from '../../hooks/useParkingMap';
 
 const stepDefs = [
   { id: 1, label: 'Görsel alındı', threshold: 8 },
@@ -28,6 +29,7 @@ export default function AnalysisRunningScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
+  const { coords, spots, loading: mapLoading, locationLabel, hasSpots, isReal } = useParkingMap(3000);
   const [progress, setProgress] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const dotAnim = useRef(new Animated.Value(0)).current;
@@ -98,24 +100,32 @@ export default function AnalysisRunningScreen() {
             <MapView
               provider={PROVIDER_DEFAULT}
               style={StyleSheet.absoluteFill}
-              initialRegion={{
-                latitude: 40.9928,
-                longitude: 29.0315,
+              region={{
+                latitude: coords.latitude,
+                longitude: coords.longitude,
                 latitudeDelta: 0.012,
                 longitudeDelta: 0.012,
               }}
+              showsUserLocation={isReal}
               pointerEvents="none"
             >
-              <Marker
-                coordinate={{ latitude: 40.9928, longitude: 29.0315 }}
-                title="Bağdat Caddesi"
-                pinColor={Colors.primary}
-              />
+              {spots.map((s) => (
+                <Marker
+                  key={s.id}
+                  coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                  pinColor={riskPinColor(s.risk_level)}
+                />
+              ))}
             </MapView>
             <View style={styles.mapLocationBadge}>
               <Ionicons name="location" size={12} color={Colors.primary} />
-              <Text style={styles.mapLocationText}>Kadıköy, İstanbul</Text>
+              <Text style={styles.mapLocationText}>{locationLabel}</Text>
             </View>
+            {!mapLoading && !hasSpots && (
+              <View style={styles.noDataBadge} pointerEvents="none">
+                <Text style={styles.noDataText}>Park yeri verisi yok</Text>
+              </View>
+            )}
           </View>
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
@@ -248,6 +258,8 @@ const styles = StyleSheet.create({
   mapSection: { flex: 1.2, position: 'relative' },
   mapLocationBadge: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.white, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   mapLocationText: { fontSize: 10, color: Colors.text, fontWeight: '600' },
+  noDataBadge: { position: 'absolute', bottom: 8, left: 8, right: 8, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, alignItems: 'center' },
+  noDataText: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },
 
   infoSection: { flex: 0.9, padding: Spacing.md, gap: Spacing.sm },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

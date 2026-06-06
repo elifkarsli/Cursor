@@ -88,6 +88,15 @@ func New(deps Dependencies) *chi.Mux {
 			}
 		})
 
+		// GetPark AI parking routes (public - mobil demo için JWT'siz)
+		if deps.ParkingHandler != nil {
+			r.Route("/parking", func(r chi.Router) {
+				r.Post("/analyze", deps.ParkingHandler.AnalyzePhoto)
+				r.Get("/streetview", deps.ParkingHandler.AnalyzeStreetView)
+				r.Get("/map", deps.ParkingHandler.GetMapSpots)
+			})
+		}
+
 		// Protected routes (require JWT)
 		r.Group(func(r chi.Router) {
 			if deps.AuthService != nil {
@@ -175,15 +184,6 @@ func New(deps Dependencies) *chi.Mux {
 			// Audit logs by user
 			if deps.AuditHandler != nil {
 				r.Get("/users/{userId}/audit-logs", deps.AuditHandler.ListByUser)
-			}
-
-			// GetPark AI parking routes
-			if deps.ParkingHandler != nil {
-				r.Route("/parking", func(r chi.Router) {
-					r.Post("/analyze", deps.ParkingHandler.AnalyzePhoto)
-					r.Get("/streetview", deps.ParkingHandler.AnalyzeStreetView)
-					r.Get("/map", deps.ParkingHandler.GetMapSpots)
-				})
 			}
 
 			// Catch-all handler for managed endpoints (must be last in the group)

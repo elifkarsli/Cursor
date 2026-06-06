@@ -1,12 +1,47 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// loadDotEnv reads a .env file (if present) and populates environment variables
+// that are not already set. Searches the current dir and a couple parents so it
+// works whether you run from the module root or cmd/server.
+func loadDotEnv() {
+	candidates := []string{".env", "../.env", "../../.env"}
+	for _, path := range candidates {
+		file, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			eq := strings.Index(line, "=")
+			if eq < 0 {
+				continue
+			}
+			key := strings.TrimSpace(line[:eq])
+			val := strings.TrimSpace(line[eq+1:])
+			val = strings.Trim(val, `"'`)
+			if key != "" {
+				if _, exists := os.LookupEnv(key); !exists {
+					os.Setenv(key, val)
+				}
+			}
+		}
+		file.Close()
+		return
+	}
+}
 
 // Config holds all application configuration.
 type Config struct {
@@ -43,8 +78,11 @@ type DatabaseConfig struct {
 // DSN returns the PostgreSQL connection string.
 // Supabase Transaction Pooler kullanırken user=postgres.PROJECTID formatı gereklidir.
 func (d DatabaseConfig) DSN() string {
+	// default_query_exec_mode=simple_protocol: Supabase Transaction Pooler (6543)
+	// prepared statement'ları desteklemediği için pgx'i simple protocol'e zorlar
+	// (aksi halde "prepared statement already exists" / 42P05 hatası alınır).
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d&default_query_exec_mode=simple_protocol",
 		d.User, d.Password, d.Host, d.Port, d.DBName, d.SSLMode, d.MaxConns,
 	)
 }
@@ -94,6 +132,7 @@ type GetParkConfig struct {
 
 // Load reads configuration from environment variables with sensible defaults.
 func Load() *Config {
+	loadDotEnv()
 	return &Config{
 		Server: ServerConfig{
 			Host:         envOrDefault("SERVER_HOST", "0.0.0.0"),

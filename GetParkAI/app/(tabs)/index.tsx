@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
+import { useParkingMap, riskPinColor } from '../../hooks/useParkingMap';
 
 const { width } = Dimensions.get('window');
 
@@ -28,15 +29,9 @@ const scoreItems = [
   { label: 'Kentsel Risk', value: 60, color: Colors.warning },
 ];
 
-const mapPins = [
-  { lat: 40.9907, lng: 29.0277, type: 'green' },
-  { lat: 40.9885, lng: 29.0335, type: 'green' },
-  { lat: 40.9935, lng: 29.024, type: 'warning' },
-  { lat: 40.986, lng: 29.038, type: 'green' },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
+  const { coords, spots, loading: loadingSpots, isReal, hasSpots } = useParkingMap(3000);
 
   return (
     <View style={styles.root}>
@@ -53,13 +48,13 @@ export default function HomeScreen() {
             Veriye dayalı içgörülerle park uygunluğunu anlayın, trafik etkisini yönetin ve riskleri önceden tespit edin.
           </Text>
           <View style={styles.heroBtns}>
-            <TouchableOpacity style={styles.heroBtn} onPress={() => router.push('/analysis/start')}>
-              <Ionicons name="cloud-upload-outline" size={16} color={Colors.primary} />
-              <Text style={styles.heroBtnText}>Görsel Yükle</Text>
+            <TouchableOpacity style={styles.heroBtn} onPress={() => router.push('/analysis/running')}>
+              <Ionicons name="navigate" size={16} color={Colors.primary} />
+              <Text style={styles.heroBtnText}>Konumuma Göre Analiz Et</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.heroBtn, styles.heroBtnOutline]} onPress={() => router.push('/analysis/start')}>
-              <Ionicons name="location-outline" size={16} color={Colors.white} />
-              <Text style={[styles.heroBtnText, { color: Colors.white }]}>Haritada Başla</Text>
+            <TouchableOpacity style={[styles.heroBtn, styles.heroBtnOutline]} onPress={() => router.push('/analysis/upload')}>
+              <Ionicons name="cloud-upload-outline" size={16} color={Colors.white} />
+              <Text style={[styles.heroBtnText, { color: Colors.white }]}>Sisteme Park Yeri Yükle</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.heroCityIllustration}>
@@ -103,23 +98,28 @@ export default function HomeScreen() {
                 <MapView
                   provider={PROVIDER_DEFAULT}
                   style={StyleSheet.absoluteFill}
-                  initialRegion={{
-                    latitude: 40.9907,
-                    longitude: 29.0297,
-                    latitudeDelta: 0.02,
-                    longitudeDelta: 0.02,
+                  region={{
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    latitudeDelta: 0.03,
+                    longitudeDelta: 0.03,
                   }}
+                  showsUserLocation={isReal}
                   pointerEvents="none"
                 >
-                  {mapPins.map((pin, i) => (
+                  {spots.map((s) => (
                     <Marker
-                      key={i}
-                      coordinate={{ latitude: pin.lat, longitude: pin.lng }}
-                      pinColor={pin.type === 'green' ? Colors.secondary : Colors.warning}
+                      key={s.id}
+                      coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                      pinColor={riskPinColor(s.risk_level)}
                     />
                   ))}
                 </MapView>
-                <Text style={styles.mapLocation}>Kadıköy, İstanbul</Text>
+                {!loadingSpots && !hasSpots && (
+                  <View style={styles.mapEmpty} pointerEvents="none">
+                    <Text style={styles.mapEmptyText}>Park yeri verisi yok</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.mapLegend}>
                 {[
@@ -209,15 +209,16 @@ const styles = StyleSheet.create({
   heroTagText: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: '600' },
   heroTitle: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.white, lineHeight: 32, marginBottom: Spacing.sm },
   heroDesc: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: Spacing.lg },
-  heroBtns: { flexDirection: 'row', gap: Spacing.sm },
+  heroBtns: { flexDirection: 'column', gap: Spacing.sm },
   heroBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   heroBtnOutline: { backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
   heroBtnText: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.primary },
@@ -278,6 +279,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   mapLocation: { position: 'absolute', top: 6, left: 8, fontSize: 10, color: Colors.textSecondary, backgroundColor: Colors.white, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  mapEmpty: { position: 'absolute', bottom: 8, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  mapEmptyText: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },
   mapPin: { position: 'absolute', width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   mapPinText: { color: Colors.white, fontSize: 9, fontWeight: '800' },
   mapSelected: { position: 'absolute', top: '30%', left: '30%', width: 60, height: 60, borderRadius: 8, backgroundColor: 'rgba(26,86,255,0.15)', borderWidth: 2, borderColor: Colors.primary, borderStyle: 'dashed' },

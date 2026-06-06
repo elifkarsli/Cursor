@@ -12,22 +12,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
-
-const detailMarkers = [
-  { lat: 40.9930, lng: 29.0265, label: 'Araç #1-8', color: Colors.primary },
-  { lat: 40.9885, lng: 29.0270, label: 'Araç #9-14', color: Colors.primary },
-  { lat: 40.9935, lng: 29.0340, label: 'Araç #15-21', color: Colors.primary },
-  { lat: 40.9875, lng: 29.0335, label: 'Araç #22-27', color: Colors.primary },
-  { lat: 40.9905, lng: 29.0300, label: 'Riskli Bölge', color: Colors.danger },
-  { lat: 40.9895, lng: 29.0285, label: 'Anonimleştirilen Bölge', color: Colors.purple },
-];
+import { useParkingMap, riskPinColor } from '../../hooks/useParkingMap';
 
 type FilterTab = 'Tümü' | 'Araçlar' | 'Riskli Alanlar' | 'Anonimleştirilen Bölgeler';
 const tabs: FilterTab[] = ['Tümü', 'Araçlar', 'Riskli Alanlar', 'Anonimleştirilen Bölgeler'];
 
 const detailRows = [
   { icon: 'shield-checkmark', label: 'Genel Güven Skoru', value: '72 /100', color: Colors.secondary, hasInfo: true },
-  { icon: 'location', label: 'Konum', value: 'Kadıköy, İstanbul ›', color: Colors.primary, isLink: true },
+  { icon: 'location', label: 'Konum', value: '', color: Colors.primary, isLink: true },
   { icon: 'warning', label: 'Risk Seviyesi', value: 'Yüksek', color: Colors.danger, isBadge: true },
   { icon: 'calendar', label: 'Tespit Tarihi', value: '10 Haziran 2025, 10:24', color: Colors.textSecondary },
   { icon: 'car', label: 'Tespit Edilen Araç', value: '27 adet', color: Colors.textSecondary },
@@ -38,7 +30,12 @@ export default function DetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
+  const { coords, spots, loading: mapLoading, locationLabel, hasSpots, isReal } = useParkingMap(3000);
   const [activeTab, setActiveTab] = useState<FilterTab>('Tümü');
+
+  const rows = detailRows.map((r) =>
+    r.label === 'Konum' ? { ...r, value: `${locationLabel} ›` } : r
+  );
 
   return (
     <View style={styles.root}>
@@ -67,26 +64,31 @@ export default function DetailScreen() {
             <MapView
               provider={PROVIDER_DEFAULT}
               style={StyleSheet.absoluteFill}
-              initialRegion={{
-                latitude: 40.9905,
-                longitude: 29.0300,
+              region={{
+                latitude: coords.latitude,
+                longitude: coords.longitude,
                 latitudeDelta: 0.02,
                 longitudeDelta: 0.02,
               }}
+              showsUserLocation={isReal}
             >
-              {detailMarkers.map((m, i) => (
+              {spots.map((s) => (
                 <Marker
-                  key={i}
-                  coordinate={{ latitude: m.lat, longitude: m.lng }}
-                  title={m.label}
-                  pinColor={m.color}
+                  key={s.id}
+                  coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                  pinColor={riskPinColor(s.risk_level)}
                 />
               ))}
             </MapView>
             <View style={styles.locationSelector} pointerEvents="none">
               <Ionicons name="location" size={12} color={Colors.primary} />
-              <Text style={styles.locationText}>Kadıköy, İstanbul</Text>
+              <Text style={styles.locationText}>{locationLabel}</Text>
             </View>
+            {!mapLoading && !hasSpots && (
+              <View style={styles.mapEmpty} pointerEvents="none">
+                <Text style={styles.mapEmptyText}>Park yeri verisi yok</Text>
+              </View>
+            )}
           </View>
 
           {/* Legend */}
@@ -108,7 +110,7 @@ export default function DetailScreen() {
         {/* Detection Results */}
         <View style={styles.resultsCard}>
           <Text style={styles.sectionTitle}>Tespit Sonuçları</Text>
-          {detailRows.map((row, i) => (
+          {rows.map((row, i) => (
             <View key={i} style={styles.resultRow}>
               <View style={[styles.resultIcon, { backgroundColor: row.color + '20' }]}>
                 <Ionicons name={row.icon as any} size={16} color={row.color} />
@@ -167,6 +169,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   mapBg: { height: 260, backgroundColor: '#D8E8F0', position: 'relative', overflow: 'hidden' },
+  mapEmpty: { position: 'absolute', bottom: 10, alignSelf: 'center', left: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
+  mapEmptyText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: '600' },
   street: { position: 'absolute', height: 2, backgroundColor: 'rgba(100,130,180,0.25)' },
   locationSelector: {
     position: 'absolute', top: 10, left: 10,

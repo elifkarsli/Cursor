@@ -63,13 +63,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- =========================================================
--- Demo data (hackathon gösterimi için İstanbul noktaları)
--- =========================================================
-INSERT INTO parking_spots (id, latitude, longitude, urban_index) VALUES
-    ('demo-spot-1', 41.0082,  28.9784, 82),   -- Sultanahmet (düşük risk)
-    ('demo-spot-2', 41.0136,  28.9550, 45),   -- Beyazıt (orta risk)
-    ('demo-spot-3', 41.0370,  28.9850, 28),   -- Şişli (yüksek risk)
-    ('demo-spot-4', 41.0480,  29.0080, 67),   -- Beşiktaş
-    ('demo-spot-5', 41.0212,  29.0102, 55)    -- Kadıköy
-ON CONFLICT (id) DO NOTHING;
+-- Demo veri eklenmez; park noktaları analiz veya manuel INSERT ile oluşturulur.

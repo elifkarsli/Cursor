@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,36 +11,39 @@ import { useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/Colors';
 import AppHeader from '../components/AppHeader';
+import { useLocation } from '../hooks/useLocation';
+import { fetchMapSpots, MapSpot } from '../lib/api';
 
-const riskPoints = [
-  { id: 1, name: 'Taksim Meydanı', location: 'Beyoğlu, İstanbul', risk: 'Yüksek Risk', score: 92, color: Colors.danger },
-  { id: 2, name: 'Kadıköy Çarşı', location: 'Kadıköy, İstanbul', risk: 'Yüksek Risk', score: 88, color: Colors.danger },
-  { id: 3, name: 'Mecidiyeköy Cad.', location: 'Şişli, İstanbul', risk: 'Orta Risk', score: 74, color: Colors.warning },
-  { id: 4, name: 'Üsküdar Sahil', location: 'Üsküdar, İstanbul', risk: 'Orta Risk', score: 68, color: Colors.warning },
-  { id: 5, name: 'Zeytinburnu Merkez', location: 'Zeytinburnu, İstanbul', risk: 'Orta Risk', score: 64, color: Colors.warning },
-];
+const riskColor = (level: string) =>
+  level === 'high' ? Colors.danger : level === 'medium' ? Colors.warning : Colors.secondary;
 
-const mapMarkers = [
-  { lat: 41.0602, lng: 28.9877, type: 'red', label: 'Şişli' },
-  { lat: 41.0422, lng: 29.0094, type: 'orange', label: 'Beşiktaş' },
-  { lat: 41.0369, lng: 28.985, type: 'red', label: 'Beyoğlu' },
-  { lat: 41.0234, lng: 29.0152, type: 'orange', label: 'Üsküdar' },
-  { lat: 40.9907, lng: 29.0277, type: 'red', label: 'Kadıköy' },
-  { lat: 41.0478, lng: 28.934, type: 'green', label: 'Eyüpsultan' },
-  { lat: 41.019, lng: 28.9497, type: 'green', label: 'Fatih' },
-  { lat: 40.9942, lng: 28.9015, type: 'red', label: 'Zeytinburnu' },
-  { lat: 40.9819, lng: 28.8772, type: 'red', label: 'Bakırköy' },
-  { lat: 41.167, lng: 29.05, type: 'orange', label: 'Sarıyer' },
-  { lat: 41.0166, lng: 29.1244, type: 'orange', label: 'Ümraniye' },
-  { lat: 40.9923, lng: 29.1244, type: 'orange', label: 'Ataşehir' },
-];
-
-const markerColor = (type: string) =>
-  type === 'red' ? Colors.danger : type === 'orange' ? Colors.warning : Colors.secondary;
+const riskLabel = (level: string) =>
+  level === 'high' ? 'Yüksek Risk' : level === 'medium' ? 'Orta Risk' : 'Düşük Risk';
 
 export default function RiskMapScreen() {
   const router = useRouter();
-  const [mapType, setMapType] = useState<'Isı Haritası' | 'Normal'>('Isı Haritası');
+  const { coords } = useLocation();
+  const [mapType] = useState<'Isı Haritası' | 'Normal'>('Isı Haritası');
+  const [spots, setSpots] = useState<MapSpot[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetchMapSpots(coords.latitude, coords.longitude, 50000)
+      .then((data) => mounted && setSpots(data))
+      .catch(() => mounted && setSpots([]))
+      .finally(() => mounted && setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, [coords.latitude, coords.longitude]);
+
+  const sorted = [...spots].sort((a, b) => b.urban_index - a.urban_index);
+  const highCount = spots.filter((s) => s.risk_level === 'high').length;
+  const avgIndex = spots.length
+    ? Math.round(spots.reduce((sum, s) => sum + s.urban_index, 0) / spots.length)
+    : 0;
 
   return (
     <View style={styles.root}>
@@ -85,16 +88,15 @@ export default function RiskMapScreen() {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           {[
-            { icon: 'warning', label: 'En Yüksek Riskli Bölgeler', value: '5', color: Colors.purple, bg: Colors.purpleLight },
-            { icon: 'bar-chart', label: 'Toplam İncelenen Nokta', value: '2.384', change: '%18,6 ↑', color: Colors.primary, bg: Colors.primaryLight },
-            { icon: 'checkmark-circle', label: 'Ortalama Uygunluk', value: '72/100', change: '%6,3 ↑', color: Colors.secondary, bg: Colors.secondaryLight },
+            { icon: 'warning', label: 'Yüksek Riskli Nokta', value: String(highCount), color: Colors.purple, bg: Colors.purpleLight },
+            { icon: 'bar-chart', label: 'Toplam Park Noktası', value: String(spots.length), color: Colors.primary, bg: Colors.primaryLight },
+            { icon: 'checkmark-circle', label: 'Ortalama Uygunluk', value: spots.length ? `${avgIndex}/100` : '—', color: Colors.secondary, bg: Colors.secondaryLight },
           ].map((s, i) => (
             <View key={i} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
                 <Ionicons name={s.icon as any} size={18} color={s.color} />
               </View>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-              {s.change && <Text style={[styles.statChange, { color: s.color }]}>{s.change}</Text>}
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
@@ -113,22 +115,30 @@ export default function RiskMapScreen() {
             <MapView
               provider={PROVIDER_DEFAULT}
               style={StyleSheet.absoluteFill}
-              initialRegion={{
-                latitude: 41.04,
-                longitude: 29.0,
+              region={{
+                latitude: coords.latitude,
+                longitude: coords.longitude,
                 latitudeDelta: 0.35,
                 longitudeDelta: 0.35,
               }}
+              showsUserLocation
             >
-              {mapMarkers.map((m, i) => (
+              {spots.map((s) => (
                 <Marker
-                  key={i}
-                  coordinate={{ latitude: m.lat, longitude: m.lng }}
-                  title={m.label}
-                  pinColor={markerColor(m.type)}
+                  key={s.id}
+                  coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                  title={riskLabel(s.risk_level)}
+                  description={`Uygunluk: ${s.urban_index}/100`}
+                  pinColor={riskColor(s.risk_level)}
                 />
               ))}
             </MapView>
+            {!loading && spots.length === 0 && (
+              <View style={styles.mapEmpty} pointerEvents="none">
+                <Ionicons name="map-outline" size={20} color={Colors.textMuted} />
+                <Text style={styles.mapEmptyText}>Henüz kayıtlı park noktası yok</Text>
+              </View>
+            )}
           </View>
 
           {/* Legend */}
@@ -160,20 +170,31 @@ export default function RiskMapScreen() {
             </TouchableOpacity>
           </View>
 
-          {riskPoints.map((point, i) => (
-            <TouchableOpacity key={point.id} style={[styles.riskRow, i < riskPoints.length - 1 && styles.riskRowBorder]} onPress={() => router.push('/analysis/detail')}>
-              <Text style={styles.riskNum}>{point.id}</Text>
-              <View style={styles.riskInfo}>
-                <Text style={styles.riskName}>{point.name}</Text>
-                <Text style={styles.riskLocation}>{point.location}</Text>
-              </View>
-              <View style={[styles.riskBadge, { backgroundColor: point.color + '20' }]}>
-                <Text style={[styles.riskBadgeText, { color: point.color }]}>{point.risk}</Text>
-              </View>
-              <Text style={[styles.riskScore, { color: point.color }]}>{point.score}<Text style={styles.riskScoreSub}>/100</Text></Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
-            </TouchableOpacity>
-          ))}
+          {sorted.length === 0 ? (
+            <View style={styles.listEmpty}>
+              <Text style={styles.listEmptyText}>
+                {loading ? 'Yükleniyor...' : 'Henüz kayıtlı park noktası yok. Veri ekledikçe burada listelenecek.'}
+              </Text>
+            </View>
+          ) : (
+            sorted.map((point, i) => {
+              const c = riskColor(point.risk_level);
+              return (
+                <TouchableOpacity key={point.id} style={[styles.riskRow, i < sorted.length - 1 && styles.riskRowBorder]} onPress={() => router.push('/analysis/detail')}>
+                  <Text style={styles.riskNum}>{i + 1}</Text>
+                  <View style={styles.riskInfo}>
+                    <Text style={styles.riskName}>Park Noktası</Text>
+                    <Text style={styles.riskLocation}>{point.latitude.toFixed(4)}, {point.longitude.toFixed(4)}</Text>
+                  </View>
+                  <View style={[styles.riskBadge, { backgroundColor: c + '20' }]}>
+                    <Text style={[styles.riskBadgeText, { color: c }]}>{riskLabel(point.risk_level)}</Text>
+                  </View>
+                  <Text style={[styles.riskScore, { color: c }]}>{point.urban_index}<Text style={styles.riskScoreSub}>/100</Text></Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
       </ScrollView>
     </View>
@@ -280,6 +301,10 @@ const styles = StyleSheet.create({
   mapControls: { position: 'absolute', right: 10, bottom: 10, gap: 4 },
   mapBtn: { width: 30, height: 30, backgroundColor: Colors.white, borderRadius: 6, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   mapBtnText: { fontSize: 16, color: Colors.text, lineHeight: 20 },
+  mapEmpty: { position: 'absolute', bottom: 12, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.94)', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
+  mapEmptyText: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: '600' },
+  listEmpty: { padding: Spacing.lg, alignItems: 'center' },
+  listEmptyText: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
   mapLegend: { flexDirection: 'row', gap: Spacing.md, padding: Spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
