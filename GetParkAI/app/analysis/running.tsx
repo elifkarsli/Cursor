@@ -10,23 +10,28 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
 
-const steps = [
-  { id: 1, label: 'Görsel alındı', time: '10:24', status: 'done' },
-  { id: 2, label: 'Anonimleştirme', time: '10:24', status: 'done' },
-  { id: 3, label: 'Araç tespiti', time: '10:25', status: 'active', desc: 'Araçlar tespit ediliyor ve sınıflandırılıyor...' },
-  { id: 4, label: 'Risk skorlama', time: '', status: 'pending' },
-  { id: 5, label: 'Rapor oluşturma', time: '', status: 'pending' },
+const stepDefs = [
+  { id: 1, label: 'Görsel alındı', threshold: 8 },
+  { id: 2, label: 'Anonimleştirme', threshold: 28 },
+  { id: 3, label: 'Araç tespiti', threshold: 60, desc: 'Araçlar tespit ediliyor ve sınıflandırılıyor...' },
+  { id: 4, label: 'Risk skorlama', threshold: 84 },
+  { id: 5, label: 'Rapor oluşturma', threshold: 100 },
 ];
+
+const TOTAL_SECONDS = 6;
 
 export default function AnalysisRunningScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [progress] = useState(68);
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
+  const [progress, setProgress] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const dotAnim = useRef(new Animated.Value(0)).current;
+  const navigated = useRef(false);
 
   useEffect(() => {
     Animated.loop(
@@ -44,42 +49,72 @@ export default function AnalysisRunningScreen() {
     ).start();
   }, []);
 
+  // Demo: progress 0 -> 100 otomatik akar ve sonuca yönlendirir
+  useEffect(() => {
+    const stepMs = 100;
+    const inc = 100 / ((TOTAL_SECONDS * 1000) / stepMs);
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        const next = Math.min(100, p + inc);
+        if (next >= 100 && !navigated.current) {
+          navigated.current = true;
+          clearInterval(interval);
+          setTimeout(() => router.replace('/analysis/result'), 600);
+        }
+        return next;
+      });
+    }, stepMs);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pct = Math.round(progress);
+  const completedCount = stepDefs.filter((s) => progress >= s.threshold).length;
+  const etaSeconds = Math.max(0, Math.ceil(((100 - progress) / 100) * TOTAL_SECONDS));
+
+  const stepStatus = (index: number): 'done' | 'active' | 'pending' => {
+    if (progress >= stepDefs[index].threshold) return 'done';
+    const firstNotDone = stepDefs.findIndex((s) => progress < s.threshold);
+    return index === firstNotDone ? 'active' : 'pending';
+  };
+
   return (
     <View style={styles.root}>
-      <AppHeader showBack onBack={() => router.back()} />
+      <AppHeader showBack onBack={goBack} />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
 
         {/* Title */}
         <View style={styles.titleSection}>
-          <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backLink} onPress={goBack}>
             <Ionicons name="arrow-back" size={16} color={Colors.primary} />
             <Text style={styles.backLinkText}>Analizler</Text>
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>Analiz sürüyor</Text>
+          <Text style={styles.pageTitle}>{pct >= 100 ? 'Analiz tamamlandı' : 'Analiz sürüyor'}</Text>
           <Text style={styles.pageSubtitle}>Seçilen bölge için analiz işlemi devam ediyor.</Text>
         </View>
 
         {/* Map + Info */}
         <View style={styles.mapInfoCard}>
           <View style={styles.mapSection}>
-            <View style={styles.mapBg}>
-              <View style={styles.mapStreetH1} />
-              <View style={styles.mapStreetH2} />
-              <View style={styles.mapStreetV1} />
-              <View style={styles.mapStreetV2} />
-              <Animated.View style={[styles.analysisArea, { transform: [{ scale: pulseAnim }] }]}>
-                <View style={styles.analysisDot}>
-                  <Text style={styles.analysisDotText}>P</Text>
-                </View>
-              </Animated.View>
-              <View style={styles.mapLocationBadge}>
-                <Ionicons name="location" size={12} color={Colors.primary} />
-                <Text style={styles.mapLocationText}>Kadıköy, İstanbul</Text>
-              </View>
-              <Text style={styles.mapStreetName1}>Bağdat Cd.</Text>
-              <Text style={styles.mapStreetName2}>Söğütlüçeşme Cd.</Text>
-              <Text style={styles.mapStreetName3}>Moda Cd.</Text>
-              <Text style={styles.mapStreetName4}>Rıhtım Cd.</Text>
+            <MapView
+              provider={PROVIDER_DEFAULT}
+              style={StyleSheet.absoluteFill}
+              initialRegion={{
+                latitude: 40.9928,
+                longitude: 29.0315,
+                latitudeDelta: 0.012,
+                longitudeDelta: 0.012,
+              }}
+              pointerEvents="none"
+            >
+              <Marker
+                coordinate={{ latitude: 40.9928, longitude: 29.0315 }}
+                title="Bağdat Caddesi"
+                pinColor={Colors.primary}
+              />
+            </MapView>
+            <View style={styles.mapLocationBadge}>
+              <Ionicons name="location" size={12} color={Colors.primary} />
+              <Text style={styles.mapLocationText}>Kadıköy, İstanbul</Text>
             </View>
           </View>
           <View style={styles.infoSection}>
@@ -108,18 +143,18 @@ export default function AnalysisRunningScreen() {
         {/* Progress Circle */}
         <View style={styles.progressCard}>
           <View style={styles.progressCircleContainer}>
-            <View style={styles.progressCircle}>
-              <Text style={styles.progressPercent}>{progress}%</Text>
+            <View style={[styles.progressCircle, pct >= 100 && { borderColor: Colors.secondary }]}>
+              <Text style={styles.progressPercent}>{pct}%</Text>
               <Text style={styles.progressLabel}>Tamamlandı</Text>
             </View>
           </View>
           <View style={styles.progressInfo}>
-            <Text style={styles.progressTitle}>Analiz devam ediyor...</Text>
+            <Text style={styles.progressTitle}>{pct >= 100 ? 'Analiz tamamlandı, yönlendiriliyor...' : 'Analiz devam ediyor...'}</Text>
             <View style={styles.etaRow}>
               <Ionicons name="time-outline" size={14} color={Colors.secondary} />
               <Text style={styles.etaLabel}>Tahmini kalan süre</Text>
             </View>
-            <Text style={styles.etaTime}>1 dk 35 sn</Text>
+            <Text style={styles.etaTime}>{etaSeconds > 0 ? `${etaSeconds} sn` : 'Bitti'}</Text>
             <Text style={styles.etaNote}>Bu süre, bölgedeki veri yoğunluğuna bağlı olarak değişebilir.</Text>
           </View>
         </View>
@@ -129,41 +164,46 @@ export default function AnalysisRunningScreen() {
           <View style={styles.stepsHeader}>
             <Text style={styles.stepsTitle}>Canlı Aktivite</Text>
             <View style={styles.stepsBadge}>
-              <Text style={styles.stepsBadgeText}>3 / 5 adım tamamlandı</Text>
+              <Text style={styles.stepsBadgeText}>{completedCount} / {stepDefs.length} adım tamamlandı</Text>
             </View>
           </View>
-          {steps.map((step, i) => (
-            <View key={step.id} style={styles.stepItem}>
-              <View style={styles.stepLeft}>
-                <View style={[styles.stepIconCircle,
-                  step.status === 'done' && styles.stepIconDone,
-                  step.status === 'active' && styles.stepIconActive,
-                  step.status === 'pending' && styles.stepIconPending,
-                ]}>
-                  {step.status === 'done' && <Ionicons name="checkmark" size={14} color={Colors.white} />}
-                  {step.status === 'active' && <Animated.View style={[styles.activeDot, { opacity: dotAnim }]} />}
-                  {step.status === 'pending' && <Ionicons name="time-outline" size={14} color={Colors.textMuted} />}
-                </View>
-                {i < steps.length - 1 && (
-                  <View style={[styles.stepLine, step.status === 'done' && styles.stepLineDone]} />
-                )}
-              </View>
-              <View style={styles.stepContent}>
-                <View style={styles.stepRow}>
-                  <Text style={[styles.stepLabel,
-                    step.status === 'active' && styles.stepLabelActive,
-                    step.status === 'pending' && styles.stepLabelPending,
-                  ]}>{step.label}</Text>
-                  {step.time ? (
-                    <Text style={[styles.stepTime, step.status === 'active' && styles.stepTimeActive]}>{step.time}</Text>
-                  ) : (
-                    <Text style={styles.stepPending}>Beklemede</Text>
+          {stepDefs.map((step, i) => {
+            const status = stepStatus(i);
+            return (
+              <View key={step.id} style={styles.stepItem}>
+                <View style={styles.stepLeft}>
+                  <View style={[styles.stepIconCircle,
+                    status === 'done' && styles.stepIconDone,
+                    status === 'active' && styles.stepIconActive,
+                    status === 'pending' && styles.stepIconPending,
+                  ]}>
+                    {status === 'done' && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+                    {status === 'active' && <Animated.View style={[styles.activeDot, { opacity: dotAnim }]} />}
+                    {status === 'pending' && <Ionicons name="time-outline" size={14} color={Colors.textMuted} />}
+                  </View>
+                  {i < stepDefs.length - 1 && (
+                    <View style={[styles.stepLine, status === 'done' && styles.stepLineDone]} />
                   )}
                 </View>
-                {step.desc && <Text style={styles.stepDesc}>{step.desc}</Text>}
+                <View style={styles.stepContent}>
+                  <View style={styles.stepRow}>
+                    <Text style={[styles.stepLabel,
+                      status === 'active' && styles.stepLabelActive,
+                      status === 'pending' && styles.stepLabelPending,
+                    ]}>{step.label}</Text>
+                    {status === 'pending' ? (
+                      <Text style={styles.stepPending}>Beklemede</Text>
+                    ) : (
+                      <Text style={[styles.stepTime, status === 'active' && styles.stepTimeActive]}>
+                        {status === 'done' ? '✓' : 'İşleniyor'}
+                      </Text>
+                    )}
+                  </View>
+                  {step.desc && status === 'active' && <Text style={styles.stepDesc}>{step.desc}</Text>}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Privacy Note */}
@@ -175,10 +215,10 @@ export default function AnalysisRunningScreen() {
           </View>
         </View>
 
-        {/* View Result Button (demo) */}
-        <TouchableOpacity style={styles.resultBtn} onPress={() => router.push('/analysis/result')}>
+        {/* View Result Button */}
+        <TouchableOpacity style={styles.resultBtn} onPress={() => router.replace('/analysis/result')}>
           <Ionicons name="eye" size={18} color={Colors.white} />
-          <Text style={styles.resultBtnText}>Sonuçları Görüntüle (Demo)</Text>
+          <Text style={styles.resultBtnText}>Sonuçları Görüntüle</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -205,27 +245,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 200,
   },
-  mapSection: { flex: 1.2 },
-  mapBg: { flex: 1, backgroundColor: '#D8E8F0', position: 'relative', overflow: 'hidden' },
-  mapStreetH1: { position: 'absolute', top: '25%', left: 0, right: 0, height: 2, backgroundColor: 'rgba(100,130,180,0.3)' },
-  mapStreetH2: { position: 'absolute', top: '70%', left: 0, right: 0, height: 2, backgroundColor: 'rgba(100,130,180,0.3)' },
-  mapStreetV1: { position: 'absolute', left: '30%', top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(100,130,180,0.3)' },
-  mapStreetV2: { position: 'absolute', left: '75%', top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(100,130,180,0.3)' },
-  analysisArea: {
-    position: 'absolute', top: '20%', left: '15%',
-    width: 120, height: 120, borderRadius: 60,
-    borderWidth: 2, borderColor: Colors.primary, borderStyle: 'dashed',
-    backgroundColor: 'rgba(26,86,255,0.1)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  analysisDot: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center' },
-  analysisDotText: { color: Colors.white, fontWeight: '800', fontSize: FontSize.xl },
+  mapSection: { flex: 1.2, position: 'relative' },
   mapLocationBadge: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.white, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   mapLocationText: { fontSize: 10, color: Colors.text, fontWeight: '600' },
-  mapStreetName1: { position: 'absolute', top: 16, right: 8, fontSize: 9, color: Colors.textSecondary },
-  mapStreetName2: { position: 'absolute', bottom: 60, right: 4, fontSize: 9, color: Colors.textSecondary },
-  mapStreetName3: { position: 'absolute', bottom: 8, left: '30%', fontSize: 9, color: Colors.textSecondary },
-  mapStreetName4: { position: 'absolute', bottom: 30, left: 4, fontSize: 9, color: Colors.textSecondary },
 
   infoSection: { flex: 0.9, padding: Spacing.md, gap: Spacing.sm },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -253,7 +275,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 6,
-    borderColor: Colors.secondary,
+    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.white,
