@@ -14,14 +14,22 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.getparkai.app"
+      "bundleIdentifier": "com.getparkai.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDCu9f2Snl8MB3LOb6Wr8qMQA9-i5sjkqQ"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A56FF"
       },
-      "package": "com.getparkai.app"
+      "package": "com.getparkai.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD8apZvblEMTlUE09tUynneAOmxWepp68w"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
