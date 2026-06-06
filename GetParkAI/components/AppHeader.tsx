@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, FontSize, Spacing } from '../constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,12 +14,23 @@ interface AppHeaderProps {
 
 export default function AppHeader({ showBack, onBack, title, rightElement }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.left}>
         {showBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={10}>
             <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </TouchableOpacity>
         ) : (
