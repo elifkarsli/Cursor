@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   pageSubtitle: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   pageCounter: { fontSize: FontSize.sm, color: Colors.textMuted, fontWeight: '600' },
 
-  mainRow: { flexDirection: 'row', gap: Spacing.md },
+  mainRow: { flexDirection: 'column', gap: Spacing.md },
   configCard: {
     flex: 1,
     backgroundColor: Colors.white,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   highlightItem: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 6, padding: Spacing.sm, borderRadius: BorderRadius.sm },
   highlightText: { flex: 1, fontSize: FontSize.xs, color: Colors.text },
 
-  bottomRow: { flexDirection: 'row', gap: Spacing.md },
+  bottomRow: { flexDirection: 'column', gap: Spacing.md },
   chartsCard: {
     flex: 1,
     backgroundColor: Colors.white,
