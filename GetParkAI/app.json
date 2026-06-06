@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "GetParkAI",
+    "slug": "getparkai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A56FF"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.getparkai.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A56FF"
+      },
+      "package": "com.getparkai.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "getparkai",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
