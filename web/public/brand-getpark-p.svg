@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="GetPark logo">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C79F8" />
+      <stop offset="100%" stop-color="#0B4DC5" />
+    </linearGradient>
+    <clipPath id="outerClip">
+      <rect x="8" y="8" width="304" height="304" rx="48" />
+    </clipPath>
+  </defs>
+  <rect width="320" height="320" rx="56" fill="#F8FBFF" />
+  <rect x="16" y="16" width="288" height="288" rx="48" fill="url(#bg)" />
+  <rect x="28" y="28" width="264" height="264" rx="40" fill="#0F2D6D" />
+  <g clip-path="url(#outerClip)">
+    <rect x="48" y="64" width="224" height="176" rx="32" fill="#FFF" />
+    <path d="M172 24c0-5.5 4.5-10 10-10h36c5.5 0 10 4.5 10 10v52c0 5.5-4.5 10-10 10h-36c-5.5 0-10-4.5-10-10V24Z" fill="#08205C" transform="translate(16 18)" />
+    <circle cx="178" cy="62" r="38" fill="#0E2F72" />
+    <path d="M178 38c13.3 0 24 10.7 24 24s-10.7 24-24 24-24-10.7-24-24 10.7-24 24-24Z" fill="#FFFFFF" />
+    <text x="178" y="74" fill="#0E2F72" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" text-anchor="middle" dominant-baseline="middle">P</text>
+    <path d="M66 114h188" stroke="#E5E7EB" stroke-width="12" stroke-linecap="round" />
+    <path d="M66 138h188" stroke="#E5E7EB" stroke-width="12" stroke-linecap="round" />
+    <rect x="78" y="154" width="80" height="52" rx="14" fill="#0E2F72" />
+    <path d="M92 182h56" stroke="#FFF" stroke-width="10" stroke-linecap="round" />
+    <rect x="162" y="154" width="80" height="52" rx="14" fill="#CBD5E1" />
+    <path d="M176 182h48" stroke="#94A3B8" stroke-width="10" stroke-linecap="round" />
+    <path d="M96 175c6-12 18-16 28-16" stroke="#FFF" stroke-width="8" stroke-linecap="round" />
+    <path d="M176 175c6-12 18-16 28-16" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" />
+    <path d="M88 189c3 4 12 6 22 6s19-2 22-6" stroke="#FFF" stroke-width="8" stroke-linecap="round" />
+    <path d="M168 189c3 4 12 6 22 6s19-2 22-6" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" />
+  </g>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 120" role="img" aria-label="SeaCores logo">
+  <defs>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F3A78" />
+      <stop offset="100%" stop-color="#4BAFFF" />
+    </linearGradient>
+  </defs>
+  <rect width="380" height="120" rx="24" fill="#F8FBFF" />
+  <g transform="translate(28 16)">
+    <path d="M56 80c-18-32 6-62 42-62s70 24 82 40c10 14 10 28 10 28s-28 18-72 18c-42 0-62-10-62-10z" fill="url(#waveGrad)" opacity="0.95" />
+    <path d="M110 30C96 22 81 18 66 18 46 18 34 32 32 52s10 42 18 50c10 10 26 12 46 10 22-2 42-14 56-30 8-10 12-22 12-34 0-14-10-24-18-26-8-2-18 2-26 8z" fill="#F8FBFF" />
+    <path d="M54 72c18-22 40-26 56-22 14 4 28 18 32 36" fill="none" stroke="#0F3A78" stroke-width="8" stroke-linecap="round" />
+    <path d="M70 52c8-8 18-12 28-12 12 0 22 6 28 14" fill="none" stroke="#0F3A78" stroke-width="6" stroke-linecap="round" />
+    <path d="M94 68c6-4 14-6 20-6 8 0 16 4 20 10" fill="none" stroke="#0F3A78" stroke-width="6" stroke-linecap="round" />
+    <circle cx="60" cy="32" r="10" fill="#F8FBFF" stroke="#0F3A78" stroke-width="6" />
+  </g>
+  <text x="156" y="70" fill="#112B47" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">SeaCores</text>
+</svg>
