@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
-import AppHeader from '../../components/AppHeader';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Colors, Spacing, BorderRadius, FontSize } from '../constants/Colors';
+import AppHeader from '../components/AppHeader';
 
 const riskPoints = [
   { id: 1, name: 'Taksim Meydanı', location: 'Beyoğlu, İstanbul', risk: 'Yüksek Risk', score: 92, color: Colors.danger },
@@ -20,26 +21,22 @@ const riskPoints = [
 ];
 
 const mapMarkers = [
-  { top: '15%', left: '55%', type: 'red', label: 'Şişli' },
-  { top: '10%', left: '65%', type: 'orange', label: 'Beşiktaş' },
-  { top: '20%', left: '60%', type: 'red', label: 'Beyoğlu' },
-  { top: '30%', left: '75%', type: 'orange', label: 'Üsküdar' },
-  { top: '42%', left: '62%', type: 'red', label: 'Kadıköy' },
-  { top: '8%', left: '42%', type: 'green', label: 'Eyüpsultan' },
-  { top: '22%', left: '35%', type: 'green', label: 'Fatih' },
-  { top: '50%', left: '25%', type: 'red', label: 'Zeytinburnu' },
-  { top: '52%', left: '40%', type: 'red', label: 'Bakırköy' },
-  { top: '8%', left: '72%', type: 'orange', label: 'Sarıyer' },
-  { top: '35%', left: '88%', type: 'orange', label: 'Ümraniye' },
-  { top: '50%', left: '88%', type: 'orange', label: 'Ataşehir' },
+  { lat: 41.0602, lng: 28.9877, type: 'red', label: 'Şişli' },
+  { lat: 41.0422, lng: 29.0094, type: 'orange', label: 'Beşiktaş' },
+  { lat: 41.0369, lng: 28.985, type: 'red', label: 'Beyoğlu' },
+  { lat: 41.0234, lng: 29.0152, type: 'orange', label: 'Üsküdar' },
+  { lat: 40.9907, lng: 29.0277, type: 'red', label: 'Kadıköy' },
+  { lat: 41.0478, lng: 28.934, type: 'green', label: 'Eyüpsultan' },
+  { lat: 41.019, lng: 28.9497, type: 'green', label: 'Fatih' },
+  { lat: 40.9942, lng: 28.9015, type: 'red', label: 'Zeytinburnu' },
+  { lat: 40.9819, lng: 28.8772, type: 'red', label: 'Bakırköy' },
+  { lat: 41.167, lng: 29.05, type: 'orange', label: 'Sarıyer' },
+  { lat: 41.0166, lng: 29.1244, type: 'orange', label: 'Ümraniye' },
+  { lat: 40.9923, lng: 29.1244, type: 'orange', label: 'Ataşehir' },
 ];
 
-const heatColors = [
-  { top: '20%', left: '55%', size: 80, color: Colors.danger + '40' },
-  { top: '32%', left: '60%', size: 60, color: Colors.warning + '30' },
-  { top: '10%', left: '42%', size: 50, color: Colors.secondary + '30' },
-  { top: '45%', left: '30%', size: 70, color: Colors.danger + '35' },
-];
+const markerColor = (type: string) =>
+  type === 'red' ? Colors.danger : type === 'orange' ? Colors.warning : Colors.secondary;
 
 export default function RiskMapScreen() {
   const router = useRouter();
@@ -89,8 +86,8 @@ export default function RiskMapScreen() {
         <View style={styles.statsRow}>
           {[
             { icon: 'warning', label: 'En Yüksek Riskli Bölgeler', value: '5', color: Colors.purple, bg: Colors.purpleLight },
-            { icon: 'bar-chart', label: 'Toplam İncelenen Nokta', value: '2.384', change: '%%18,6 ↑', color: Colors.primary, bg: Colors.primaryLight },
-            { icon: 'checkmark-circle', label: 'Ortalama Uygunluk', value: '72 /100', change: '%%6,3 ↑', color: Colors.secondary, bg: Colors.secondaryLight },
+            { icon: 'bar-chart', label: 'Toplam İncelenen Nokta', value: '2.384', change: '%18,6 ↑', color: Colors.primary, bg: Colors.primaryLight },
+            { icon: 'checkmark-circle', label: 'Ortalama Uygunluk', value: '72/100', change: '%6,3 ↑', color: Colors.secondary, bg: Colors.secondaryLight },
           ].map((s, i) => (
             <View key={i} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
@@ -113,41 +110,25 @@ export default function RiskMapScreen() {
           </TouchableOpacity>
 
           <View style={styles.mapBg}>
-            {/* Istanbul silhouette areas */}
-            <View style={styles.bogazici} />
-            <View style={styles.europeSide} />
-            <View style={styles.asiaSide} />
-
-            {/* Heat blobs */}
-            {heatColors.map((h, i) => (
-              <View key={i} style={[styles.heatBlob, {
-                top: h.top, left: h.left,
-                width: h.size, height: h.size,
-                borderRadius: h.size / 2,
-                backgroundColor: h.color,
-              }]} />
-            ))}
-
-            {/* District markers */}
-            {mapMarkers.map((m, i) => (
-              <View key={i} style={[styles.markerContainer, { top: m.top, left: m.left }]}>
-                <View style={[styles.marker, {
-                  backgroundColor: m.type === 'red' ? Colors.danger : m.type === 'orange' ? Colors.warning : Colors.secondary
-                }]}>
-                  <Ionicons name="location" size={10} color={Colors.white} />
-                </View>
-                <Text style={styles.markerLabel}>{m.label}</Text>
-              </View>
-            ))}
-
-            {/* İstanbul text */}
-            <Text style={styles.cityLabel}>İstanbul</Text>
-
-            {/* Map Controls */}
-            <View style={styles.mapControls}>
-              <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>+</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>−</Text></TouchableOpacity>
-            </View>
+            <MapView
+              provider={PROVIDER_DEFAULT}
+              style={StyleSheet.absoluteFill}
+              initialRegion={{
+                latitude: 41.04,
+                longitude: 29.0,
+                latitudeDelta: 0.35,
+                longitudeDelta: 0.35,
+              }}
+            >
+              {mapMarkers.map((m, i) => (
+                <Marker
+                  key={i}
+                  coordinate={{ latitude: m.lat, longitude: m.lng }}
+                  title={m.label}
+                  pinColor={markerColor(m.type)}
+                />
+              ))}
+            </MapView>
           </View>
 
           {/* Legend */}

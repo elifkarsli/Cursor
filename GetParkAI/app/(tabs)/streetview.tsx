@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
 import AppHeader from '../../components/AppHeader';
 
@@ -108,49 +109,27 @@ export default function StreetViewScreen() {
             {/* Main map */}
             <View style={styles.mainMapContainer}>
               <View style={styles.mainMapBg}>
-                <View style={[styles.street, { top: '25%', left: 0, right: 0 }]} />
-                <View style={[styles.street, { top: '55%', left: 0, right: 0 }]} />
-                <View style={[styles.street, { top: '80%', left: 0, right: 0 }]} />
-                <View style={[styles.street, { left: '30%', top: 0, bottom: 0, width: 2 }]} />
-                <View style={[styles.street, { left: '70%', top: 0, bottom: 0, width: 2 }]} />
-
-                {/* Selected route highlight */}
-                <View style={styles.routeHighlight} />
-
-                {/* Route points */}
-                {[{ top: '20%', left: '28%' }, { top: '35%', left: '32%' }, { top: '50%', left: '30%' }].map((p, i) => (
-                  <View key={i} style={[styles.routePoint, { top: p.top, left: p.left }]} />
-                ))}
-
-                {/* Goztepe station */}
-                <View style={styles.stationLabel}>
-                  <Text style={styles.stationText}>M Göztepe</Text>
-                </View>
-
-                {/* Map Controls */}
-                <View style={styles.mapControls}>
-                  <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>+</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.mapBtn}><Text style={styles.mapBtnText}>−</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.mapBtn}><Ionicons name="navigate" size={12} color={Colors.primary} /></TouchableOpacity>
-                </View>
+                <MapView
+                  provider={PROVIDER_DEFAULT}
+                  style={StyleSheet.absoluteFill}
+                  initialRegion={{
+                    latitude: 40.9928,
+                    longitude: 29.0315,
+                    latitudeDelta: 0.012,
+                    longitudeDelta: 0.012,
+                  }}
+                >
+                  <Marker
+                    coordinate={{ latitude: 40.9928, longitude: 29.0315 }}
+                    title="Bağdat Caddesi"
+                    description="Kadıköy, İstanbul"
+                    pinColor={Colors.primary}
+                  />
+                </MapView>
 
                 {/* Bağdat Cd label */}
-                <View style={styles.streetNameTag}>
+                <View style={styles.streetNameTag} pointerEvents="none">
                   <Text style={styles.streetNameText}>Bağdat Caddesi</Text>
-                </View>
-
-                {/* Legend */}
-                <View style={styles.mapLegend}>
-                  {[
-                    { color: Colors.primary, label: 'Kapsanan Güzergah', style: 'solid' },
-                    { color: Colors.secondary, label: 'Mevcut Street View', style: 'dashed' },
-                    { color: Colors.gray300, label: 'Kapsama Dışı', style: 'dashed' },
-                  ].map((l, i) => (
-                    <View key={i} style={styles.legendItem}>
-                      <View style={[styles.legendLine, { backgroundColor: l.color }]} />
-                      <Text style={styles.legendText}>{l.label}</Text>
-                    </View>
-                  ))}
                 </View>
               </View>
             </View>
