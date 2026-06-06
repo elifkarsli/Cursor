@@ -70,6 +70,23 @@ func New(deps Dependencies) *chi.Mux {
 		MaxAge:           300,
 	}))
 
+	// Root — tarayıcıda domain açıldığında API bilgisi döner
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+  "service": "GetPark AI API",
+  "status": "running",
+  "docs": "https://github.com/getpark-ai",
+  "endpoints": {
+    "health": "/health/live",
+    "parking_map": "/api/v1/parking/map?lat=41.0&lng=29.0&radius=500",
+    "parking_analyze": "POST /api/v1/parking/analyze",
+    "parking_streetview": "/api/v1/parking/streetview?lat=41.0&lng=29.0"
+  }
+}`))
+	})
+
 	// Health endpoints
 	healthHandler := health.NewHandler(deps.DB, deps.Redis)
 	r.Get("/health/live", healthHandler.Liveness)

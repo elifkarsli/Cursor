@@ -1,0 +1,10 @@
+# Cloudflare Tunnel — hackathon.getpark.org → localhost:8080
+# Kurulum: deployments/DEPLOY.md
+
+tunnel: getpark-hackathon
+credentials-file: /etc/cloudflared/getpark-hackathon.json
+
+ingress:
+  - hostname: hackathon.getpark.org
+    service: http://127.0.0.1:8080
+  - service: http_status:404

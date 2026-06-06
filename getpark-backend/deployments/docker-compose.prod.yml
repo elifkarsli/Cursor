@@ -1,0 +1,22 @@
+# .env.production gizli tutulmalı — git'e eklenmez
+
+# GetPark AI — production (Supabase + opsiyonel Redis yok)
+# Kullanım:
+#   cp .env.production.example .env.production
+#   # .env.production dosyasını doldur
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    container_name: getpark-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.production
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
